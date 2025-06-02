@@ -1,0 +1,64 @@
+---
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{title}</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+		<style>
+			:root {
+				--background: #0a0a0a;
+				--text: #ffffff;
+				--accent: #646cff;
+				--secondary: #242424;
+				--success: #4ade80;
+				--error: #ef4444;
+			}
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+			@keyframes gradientBg {
+				0% {
+					background-position: 0% 50%;
+				}
+				50% {
+					background-position: 100% 50%;
+				}
+				100% {
+					background-position: 0% 50%;
+				}
+			}
+
+			body {
+				font-family: 'Inter', sans-serif;
+				color: var(--text);
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				padding: 2rem;
+				background: radial-gradient(100% 100% at 50% 50%, #0a0a0a, #1a0034);
+				background-size: 400% 400%;
+				animation: gradientBg 30s ease infinite;
+				position: relative;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>

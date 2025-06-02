@@ -1,0 +1,204 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="ElevenLabs Conversational AI">
+	<main>
+		<div class="hero">
+			<img src="/images/elevenlabs-logo-white.svg" alt="ElevenLabs" class="hero-logo" />
+			<h1>Conversational AI</h1>
+		</div>
+		<div class="container">
+		<div class="controls">
+			<button id="startButton" class="button primary">Start Conversation</button>
+			<button id="stopButton" class="button secondary" disabled>Stop Conversation</button>
+		</div>
+		<div class="status">
+			<p>Status: <span id="connectionStatus" class="badge disconnected">Disconnected</span></p>
+			<p>Agent is <span id="agentStatus" class="badge listening">listening</span></p>
+		</div>
+		</div>
+	</main>
+
+	<style>
+		.hero {
+			padding: 4rem 2rem;
+			text-align: center;
+			margin-bottom: 3rem;
+		}
+
+		.hero-logo {
+			max-width: 300px;
+			width: 100%;
+			height: auto;
+			margin-bottom: 2rem;
+		}
+
+		.container {
+			max-width: 600px;
+			width: 100%;
+			text-align: center;
+		}
+
+		h1 {
+			font-size: 3rem;
+			font-weight: 100;
+			margin-bottom: 2rem;
+			color: var(--text);
+		}
+
+		.controls {
+			display: flex;
+			gap: 1rem;
+			justify-content: center;
+			margin-bottom: 2rem;
+		}
+
+		.button {
+			padding: 0.75rem 1.5rem;
+			border-radius: 8px;
+			border: none;
+			font-weight: 500;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.button:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.button.primary {
+			background-color: var(--accent);
+			color: var(--text);
+		}
+
+		.button.primary:hover:not(:disabled) {
+			background-color: color-mix(in srgb, var(--accent) 80%, white);
+		}
+
+		.button.secondary {
+			background-color: var(--secondary);
+			color: var(--text);
+		}
+
+		.button.secondary:hover:not(:disabled) {
+			background-color: color-mix(in srgb, var(--secondary) 80%, white);
+		}
+
+		.status {
+			font-size: 1.125rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.badge {
+			display: inline-block;
+			padding: 0.25rem 0.75rem;
+			border-radius: 9999px;
+			font-weight: 500;
+			font-size: 0.875rem;
+			margin-left: 0.5rem;
+		}
+
+		.badge.disconnected {
+			background-color: var(--error);
+			color: white;
+		}
+
+		.badge.connected {
+			background-color: var(--success);
+			color: white;
+		}
+
+		.badge.listening {
+			background-color: var(--accent);
+			color: white;
+		}
+
+		.badge.speaking {
+			background-color: var(--secondary);
+			color: white;
+		}
+	</style>
+</Layout>
+
+<script>
+	import { Conversation } from '@elevenlabs/client';
+
+	const startButton = document.getElementById('startButton') as HTMLButtonElement;
+	const stopButton = document.getElementById('stopButton') as HTMLButtonElement;
+	const connectionStatus = document.getElementById('connectionStatus') as HTMLElement;
+	const agentStatus = document.getElementById('agentStatus') as HTMLElement;
+
+	let conversation;
+
+	async function getSignedUrl() {
+    const response = await fetch('/api/get-signed-url');
+    if (!response.ok) {
+        throw new Error(`Failed to get signed url: ${response.statusText}`);
+    }
+    const { signedUrl } = await response.json();
+    return signedUrl;
+	}
+
+	async function startConversation() {
+		if (!startButton || !stopButton || !connectionStatus || !agentStatus) {
+			console.error('Required DOM elements not found');
+			return;
+		}
+
+		try {
+			// Request microphone permission
+			await navigator.mediaDevices.getUserMedia({ audio: true });
+			const signedUrl = await getSignedUrl();
+
+			// Start the conversation
+			conversation = await Conversation.startSession({
+				signedUrl, // Replace with your agent ID
+				onConnect: () => {
+					connectionStatus.textContent = 'Connected';
+					connectionStatus.className = 'badge connected';
+					startButton.disabled = true;
+					stopButton.disabled = false;
+				},
+				onDisconnect: () => {
+					connectionStatus.textContent = 'Disconnected';
+					connectionStatus.className = 'badge disconnected';
+					startButton.disabled = false;
+					stopButton.disabled = true;
+				},
+				onError: (error) => {
+					console.error('Error:', error);
+					connectionStatus.textContent = 'Error';
+					connectionStatus.className = 'badge disconnected';
+				},
+				onModeChange: (mode) => {
+					const newMode = mode.mode === 'speaking' ? 'speaking' : 'listening';
+					agentStatus.textContent = newMode;
+					agentStatus.className = `badge ${newMode}`;
+				},
+			});
+		} catch (error) {
+			console.error('Failed to start conversation:', error);
+		}
+	}
+
+	async function stopConversation() {
+		if (!startButton || !stopButton || !connectionStatus || !agentStatus) {
+			console.error('Required DOM elements not found');
+			return;
+		}
+
+		if (conversation) {
+			await conversation.endSession();
+			conversation = null;
+		}
+	}
+
+	startButton.addEventListener('click', startConversation);
+	stopButton.addEventListener('click', stopConversation);
+</script>
+
+
