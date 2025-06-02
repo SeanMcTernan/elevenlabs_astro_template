@@ -1,4 +1,4 @@
-![ElevenLabs & Netlify](/images/elevenlabs-logo-black.svg)
+![ElevenLabs & Netlify](public/images/elevenlabs-logo-black.svg)
 
 # ElevenLabs + Netlify AI Starter
 
