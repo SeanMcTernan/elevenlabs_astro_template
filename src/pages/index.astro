@@ -3,6 +3,10 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="ElevenLabs Conversational AI">
+	<div id="conversationOverlay" class="overlay hidden">
+
+		<img src="/images/logo.svg" alt="ElevenLabs" class="overlay-logo" />
+	</div>
 	<main>
 		<div class="hero">
 			<img src="/images/elevenlabs-logo-white.svg" alt="ElevenLabs" class="hero-logo" />
@@ -11,16 +15,77 @@ import Layout from '../layouts/Layout.astro';
 		<div class="container">
 		<div class="controls">
 			<button id="startButton" class="button primary">Start Conversation</button>
-			<button id="stopButton" class="button secondary" disabled>Stop Conversation</button>
 		</div>
 		<div class="status">
 			<p>Status: <span id="connectionStatus" class="badge disconnected">Disconnected</span></p>
-			<p>Agent is <span id="agentStatus" class="badge listening">listening</span></p>
 		</div>
 		</div>
 	</main>
 
 	<style>
+
+
+		@keyframes rotate {
+			0% {
+				transform: rotate(0deg);
+			}
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		.overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.85);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 1000;
+			opacity: 0;
+			visibility: hidden;
+			transition: opacity 0.3s ease, visibility 0.3s ease;
+		}
+
+		.overlay.visible {
+			opacity: 1;
+			visibility: visible;
+		}
+
+		.overlay.hidden {
+			opacity: 0;
+			visibility: hidden;
+		}
+
+		.overlay-logo {
+			width: 200px;
+			height: auto;
+			transition: transform 0.3s ease;
+		}
+
+		@keyframes pulse {
+			0% { transform: scale(1); }
+			20% { transform: scale(1.15); }
+			40% { transform: scale(1); }
+			60% { transform: scale(1.2); }
+			80% { transform: scale(1.1); }
+			100% { transform: scale(1); }
+		}
+
+		.overlay-logo.speaking {
+			animation: pulse 1.5s ease-in-out infinite;
+		}
+
+
+
+		.overlay-logo.idle {
+			animation: rotate 20s linear infinite;
+			transition: all 0.5s ease-out;
+		}
+
 		.hero {
 			padding: 4rem 2rem;
 			text-align: center;
@@ -69,12 +134,12 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		.button.primary {
-			background-color: var(--accent);
-			color: var(--text);
+			background-color: #00ffff;
+			color: black;
 		}
 
 		.button.primary:hover:not(:disabled) {
-			background-color: color-mix(in srgb, var(--accent) 80%, white);
+			background-color: #00cccc;
 		}
 
 		.button.secondary {
@@ -106,31 +171,39 @@ import Layout from '../layouts/Layout.astro';
 			background-color: var(--error);
 			color: white;
 		}
-
 		.badge.connected {
 			background-color: var(--success);
 			color: white;
 		}
 
-		.badge.listening {
-			background-color: var(--accent);
-			color: white;
-		}
 
-		.badge.speaking {
-			background-color: var(--secondary);
-			color: white;
-		}
 	</style>
 </Layout>
 
 <script>
+	console.log('%c🎤 ElevenLabs Demo Initializing...', 'color: #4CAF50; font-size: 20px; font-weight: bold;');
+
 	import { Conversation } from '@elevenlabs/client';
 
 	const startButton = document.getElementById('startButton') as HTMLButtonElement;
-	const stopButton = document.getElementById('stopButton') as HTMLButtonElement;
 	const connectionStatus = document.getElementById('connectionStatus') as HTMLElement;
-	const agentStatus = document.getElementById('agentStatus') as HTMLElement;
+
+	const overlay = document.getElementById('conversationOverlay') as HTMLElement;
+	const overlayLogo = overlay?.querySelector('.overlay-logo') as HTMLElement;
+
+	if (!startButton || !connectionStatus || !overlay || !overlayLogo) {
+		console.error('Required DOM elements not found');
+		throw new Error('Required DOM elements not found');
+	}
+
+	// Test animation function
+	function testAnimation() {
+		console.log('%c🔄 Testing Logo Animation', 'color: #2196F3; font-size: 16px;');
+		overlayLogo.style.transform = 'scale(1.2)';
+		setTimeout(() => {
+			overlayLogo.style.transform = 'scale(1)';
+		}, 500);
+	}
 
 	let conversation;
 
@@ -144,10 +217,13 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	async function startConversation() {
-		if (!startButton || !stopButton || !connectionStatus || !agentStatus) {
+		if (!startButton || !connectionStatus) {
 			console.error('Required DOM elements not found');
 			return;
 		}
+
+		startButton.textContent = 'Starting...';
+		startButton.disabled = true;
 
 		try {
 			// Request microphone permission
@@ -156,28 +232,68 @@ import Layout from '../layouts/Layout.astro';
 
 			// Start the conversation
 			conversation = await Conversation.startSession({
-				signedUrl, // Replace with your agent ID
+				signedUrl,
 				onConnect: () => {
 					connectionStatus.textContent = 'Connected';
 					connectionStatus.className = 'badge connected';
 					startButton.disabled = true;
-					stopButton.disabled = false;
+					overlay.classList.remove('hidden');
+					overlay.classList.add('visible');
+					overlayLogo.classList.add('idle');
 				},
 				onDisconnect: () => {
 					connectionStatus.textContent = 'Disconnected';
 					connectionStatus.className = 'badge disconnected';
+
 					startButton.disabled = false;
-					stopButton.disabled = true;
+					overlay.classList.remove('visible');
+					overlay.classList.add('hidden');
+					overlayLogo.classList.remove('speaking', 'idle');
+					overlayLogo.style.transform = '';
 				},
 				onError: (error) => {
 					console.error('Error:', error);
 					connectionStatus.textContent = 'Error';
 					connectionStatus.className = 'badge disconnected';
 				},
-				onModeChange: (mode) => {
-					const newMode = mode.mode === 'speaking' ? 'speaking' : 'listening';
-					agentStatus.textContent = newMode;
-					agentStatus.className = `badge ${newMode}`;
+				onModeChange: (modeEvent: { mode: string }) => {
+					if (!modeEvent || !modeEvent.mode) {
+						console.error('Invalid mode object:', modeEvent);
+						return;
+					}
+
+					const newMode = modeEvent.mode === 'speaking' ? 'speaking' : 'listening';
+					console.log('%c🔄 Mode Changed', 'color: #FF9800; font-size: 16px;', newMode);
+
+					
+					// Update overlay logo animation
+					if (newMode === 'speaking') {
+						console.log('%c🗣️ Speaking Mode', 'color: #E91E63; font-size: 16px;');
+						overlayLogo.classList.remove('idle');
+						overlayLogo.classList.add('speaking');
+						testAnimation(); // Test the animation immediately
+					} else {
+						overlayLogo.classList.remove('speaking');
+						overlayLogo.classList.add('idle');
+					}
+				},
+				// @ts-ignore - onAudioPlay is available but not in type definitions
+				onAudioPlay: (audio: { getAudioTrack: () => MediaStreamTrack }) => {
+					console.log('%cAudio Play Event', 'color: green; font-weight: bold');
+					if (!audio || !audio.getAudioTrack) {
+						console.error('Invalid audio object:', audio);
+						return;
+					}
+
+					console.log('%c🎵 Audio Stream Started', 'color: #9C27B0; font-size: 16px;');
+					try {
+						// Audio stream started, animations handled by CSS
+						console.log('%c🎵 Audio stream started', 'color: #9C27B0; font-size: 16px;');
+						
+						console.log('%c🎵 Using CSS animations for speaking state', 'color: #9C27B0; font-size: 16px;');
+					} catch (error) {
+						console.error('Error in audio processing:', error);
+					}
 				},
 			});
 		} catch (error) {
@@ -186,7 +302,7 @@ import Layout from '../layouts/Layout.astro';
 	}
 
 	async function stopConversation() {
-		if (!startButton || !stopButton || !connectionStatus || !agentStatus) {
+		if (!startButton || !connectionStatus) {
 			console.error('Required DOM elements not found');
 			return;
 		}
@@ -195,10 +311,21 @@ import Layout from '../layouts/Layout.astro';
 			await conversation.endSession();
 			conversation = null;
 		}
+		
+		// Reset button state
+		startButton.textContent = 'Start Conversation';
+		startButton.disabled = false;
 	}
 
 	startButton.addEventListener('click', startConversation);
-	stopButton.addEventListener('click', stopConversation);
+
+	// Add click handler for overlay background
+	overlay.addEventListener('click', (event) => {
+		// Only stop if clicking the overlay background, not the logo
+		if (event.target === overlay) {
+			stopConversation();
+		}
+	});
 </script>
 
 
