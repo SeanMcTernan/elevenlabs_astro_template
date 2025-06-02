@@ -2,7 +2,7 @@
 
 # ElevenLabs + Netlify AI Starter
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/d5efd8aa-ae58-4fae-8633-c8c35c46bf3e/deploy-status)](https://app.netlify.com/sites/nuxt-ai-chat/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/fc2346fb-8a56-40c8-abd7-55ce294f0ef6/deploy-status)](https://app.netlify.com/projects/elevenlabs-ai-chat/deploys)
 
 This is a [Astro](https://astro.build/) project set up to be instantly deployed to [Netlify](https://www.netlify.com/)! You can take a look at the live version of the site [here](https://elevenlabs-ai-chat.netlify.app).
 
