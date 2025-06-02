@@ -6,7 +6,7 @@
 
 This is a [Astro](https://astro.build/) project set up to be instantly deployed to [Netlify](https://www.netlify.com/)! You can take a look at the live version of the site [here](https://elevenlabs-ai-chat.netlify.app).
 
-This project is a simple example of ElevenLabs Conversational AI product. It is bootstrapped to automatically deploy to Netlify using Netlify Functions as the server. This fascilitates the Server Side Authentication rather than handling the process entirely on the client. 
+This project is a simple example of [ElevenLabs Conversational AI product](https://elevenlabs.io/docs/conversational-ai/overview). It is bootstrapped to automatically deploy to Netlify using Netlify Functions as the server. This fascilitates the Server Side Authentication rather than handling the process entirely on the client. First, you must [setup](https://elevenlabs.io/docs/conversational-ai/overview) and agent using ElevenLabs. 
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/SeanMcTernan/elevenlabs_astro_template&utm_source=github)
 
