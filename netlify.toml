@@ -1,0 +1,4 @@
+[template.environment]
+#Variables for the template
+ELEVENLABS_API_KEY = "YOUR-ELEVENLABS-API-KEY"
+AGENT_ID = "YOUR-AGENT-ID"
