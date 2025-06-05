@@ -16,9 +16,9 @@ import Layout from '../layouts/Layout.astro';
 		<div class="controls">
 			<button id="startButton" class="button primary">Start Conversation</button>
 		</div>
-		<div class="status">
-			<p>Status: <span id="connectionStatus" class="badge disconnected">Disconnected</span></p>
-		</div>
+			<div class="status-badges">
+				<span id="connectionStatus" class="badge disconnected">Disconnected</span>
+			</div>
 		</div>
 	</main>
 
@@ -177,153 +177,42 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 
+
 	</style>
 </Layout>
 
 <script>
 	console.log('%c🎤 ElevenLabs Demo Initializing...', 'color: #4CAF50; font-size: 20px; font-weight: bold;');
 
-	import { Conversation } from '@elevenlabs/client';
+	import { setupConversation } from '../utils/conversation';
 
 	const startButton = document.getElementById('startButton') as HTMLButtonElement;
-	const connectionStatus = document.getElementById('connectionStatus') as HTMLElement;
-
-	const overlay = document.getElementById('conversationOverlay') as HTMLElement;
-	const overlayLogo = overlay?.querySelector('.overlay-logo') as HTMLElement;
+	const connectionStatus = document.getElementById('connectionStatus') as HTMLSpanElement;
+	const overlay = document.getElementById('conversationOverlay') as HTMLDivElement;
+	const overlayLogo = overlay?.querySelector('.overlay-logo') as HTMLDivElement;
 
 	if (!startButton || !connectionStatus || !overlay || !overlayLogo) {
 		console.error('Required DOM elements not found');
 		throw new Error('Required DOM elements not found');
 	}
 
-	// Test animation function
-	function testAnimation() {
-		console.log('%c🔄 Testing Logo Animation', 'color: #2196F3; font-size: 16px;');
-		overlayLogo.style.transform = 'scale(1.2)';
-		setTimeout(() => {
-			overlayLogo.style.transform = 'scale(1)';
-		}, 500);
-	}
-
-	let conversation;
-
-	async function getSignedUrl() {
-    const response = await fetch('/api/get-signed-url');
-    if (!response.ok) {
-        throw new Error(`Failed to get signed url: ${response.statusText}`);
-    }
-    const { signedUrl } = await response.json();
-    return signedUrl;
-	}
-
-	async function startConversation() {
-		if (!startButton || !connectionStatus) {
-			console.error('Required DOM elements not found');
-			return;
-		}
-
-		startButton.textContent = 'Starting...';
-		startButton.disabled = true;
-
-		try {
-			// Request microphone permission
-			await navigator.mediaDevices.getUserMedia({ audio: true });
-			const signedUrl = await getSignedUrl();
-
-			// Start the conversation
-			conversation = await Conversation.startSession({
-				signedUrl,
-				onConnect: () => {
-					connectionStatus.textContent = 'Connected';
-					connectionStatus.className = 'badge connected';
-					startButton.disabled = true;
-					overlay.classList.remove('hidden');
-					overlay.classList.add('visible');
-					overlayLogo.classList.add('idle');
-				},
-				onDisconnect: () => {
-					connectionStatus.textContent = 'Disconnected';
-					connectionStatus.className = 'badge disconnected';
-
-					startButton.disabled = false;
-					overlay.classList.remove('visible');
-					overlay.classList.add('hidden');
-					overlayLogo.classList.remove('speaking', 'idle');
-					overlayLogo.style.transform = '';
-				},
-				onError: (error) => {
-					console.error('Error:', error);
-					connectionStatus.textContent = 'Error';
-					connectionStatus.className = 'badge disconnected';
-				},
-				onModeChange: (modeEvent: { mode: string }) => {
-					if (!modeEvent || !modeEvent.mode) {
-						console.error('Invalid mode object:', modeEvent);
-						return;
-					}
-
-					const newMode = modeEvent.mode === 'speaking' ? 'speaking' : 'listening';
-					console.log('%c🔄 Mode Changed', 'color: #FF9800; font-size: 16px;', newMode);
-
-					
-					// Update overlay logo animation
-					if (newMode === 'speaking') {
-						console.log('%c🗣️ Speaking Mode', 'color: #E91E63; font-size: 16px;');
-						overlayLogo.classList.remove('idle');
-						overlayLogo.classList.add('speaking');
-						testAnimation(); // Test the animation immediately
-					} else {
-						overlayLogo.classList.remove('speaking');
-						overlayLogo.classList.add('idle');
-					}
-				},
-				// @ts-ignore - onAudioPlay is available but not in type definitions
-				onAudioPlay: (audio: { getAudioTrack: () => MediaStreamTrack }) => {
-					console.log('%cAudio Play Event', 'color: green; font-weight: bold');
-					if (!audio || !audio.getAudioTrack) {
-						console.error('Invalid audio object:', audio);
-						return;
-					}
-
-					console.log('%c🎵 Audio Stream Started', 'color: #9C27B0; font-size: 16px;');
-					try {
-						// Audio stream started, animations handled by CSS
-						console.log('%c🎵 Audio stream started', 'color: #9C27B0; font-size: 16px;');
-						
-						console.log('%c🎵 Using CSS animations for speaking state', 'color: #9C27B0; font-size: 16px;');
-					} catch (error) {
-						console.error('Error in audio processing:', error);
-					}
-				},
-			});
-		} catch (error) {
-			console.error('Failed to start conversation:', error);
-		}
-	}
-
-	async function stopConversation() {
-		if (!startButton || !connectionStatus) {
-			console.error('Required DOM elements not found');
-			return;
-		}
-
-		if (conversation) {
-			await conversation.endSession();
-			conversation = null;
-		}
-		
-		// Reset button state
-		startButton.textContent = 'Start Conversation';
-		startButton.disabled = false;
-	}
-
-	startButton.addEventListener('click', startConversation);
-
-	// Add click handler for overlay background
-	overlay.addEventListener('click', (event) => {
-		// Only stop if clicking the overlay background, not the logo
-		if (event.target === overlay) {
-			stopConversation();
+	// Initialize conversation handlers
+	setupConversation(startButton, overlayLogo, connectionStatus, {
+		onConnect: ({ conversationId }) => {
+			console.log('Connected with conversation ID:', conversationId);
+			overlay.classList.remove('hidden');
+			overlay.classList.add('visible');
+		},
+		onDisconnect: () => {
+			console.log('Disconnected');
+			overlay.classList.remove('visible');
+			overlay.classList.add('hidden');
+		},
+		onError: (message, context) => {
+			console.error('Error:', message, context);
+		},
+		onModeChange: ({ mode }) => {
+			console.log('Mode changed:', mode);
 		}
 	});
 </script>
