@@ -7,13 +7,13 @@ export default async (req: Request, context: Context) => {
 
   // Extract query parameters
   const queryParams = {
-    productType: params.get('product-type'),
+    productType: params.get('product_type'),
+    room: params.get('room'),
     color: params.get('color'),
     finish: params.get('finish'),
     sizeDimensions: params.get('size'),
     material: params.get('material'),
     style: params.get('style'),
-    room: params.get('room')
   };
 
   // Log all parameters to console
